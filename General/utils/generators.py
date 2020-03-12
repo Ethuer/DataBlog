@@ -86,6 +86,31 @@ class UserGenerator :
         df.loc[df.index.to_series() < len(purchase_A) , 'group' ] = 'A'
         
         return df
+    
+    def generate_lift_data(self, nr_of_users, initial_rate, lift, nr_of_days , user_ratio=0.5 , distribution='binom' ):
+        """
+        create an increase lift after a certain amount of time
+        """
+        users = self._generate_userlist(nr_of_users)
+        user_times = self._generate_timestamp( nr_of_users, nr_of_days)   
+        
+        if distribution=='binom':
+            prelift = self._generate_purchases( int(nr_of_users * user_ratio), initial_rate)
+            postlift = self._generate_purchases( len(users) - len(prelift), initial_rate + lift )
+        
+        else:
+            # failure
+            print("unsupported distribution,  choose binomial ")
+        
+        df = pd.DataFrame()
+        df['user_id'] = users
+        df['datetime'] = user_times
+        
+        df.sort_values('datetime', inplace=True)
+        
+        df[self.column_label] = list(prelift) + list(postlift)
+        
+        return df
         
         
     def create_timestamp(self, nr_of_days ):
@@ -94,7 +119,5 @@ class UserGenerator :
         #date_list = [base + datetime.timedelta(hours=x) for x in range(nr_of_days)]
         x = random.randint(0,(nr_of_days*24*60*60))
         return base + timedelta(seconds=x)
-        
-        
         
         
