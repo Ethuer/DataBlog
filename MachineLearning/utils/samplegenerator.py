@@ -11,10 +11,12 @@ class UserDataGenerator:
                  colnames=['click_a','click_b','amount','purchased_stock','response_time','retrieved'],
                  column_types=['binom','binom','norm','categorical','chisquare','norm'], 
                  n_labels=6, 
+                 nr_uninformative_columns=0.3,
                  preset_mean=200, 
                  preset_spread=20, 
                  n_categories = 5,
                  label_frequency=None):
+        self.nr_uninformative_columns = nr_uninformative_columns
         self.colnames = colnames
         self.col_types = column_types
         self.n_labels = n_labels
@@ -36,7 +38,7 @@ class UserDataGenerator:
                'label_freq':self.label_frequency,
                'number of labels':self.n_labels}
         
-    def _generate_label(self,n_labels , label_freq=None ):
+    def _generate_label(self,n_labels , label_freq=None):
         """
         Generate individual labels with sets of random variables
         
@@ -50,21 +52,41 @@ class UserDataGenerator:
         letters = list(string.ascii_lowercase)
     
         label_dict = {}
-
-        for n in range(n_labels):
-            label_dict[letters[n]] = []
         
-            for column in self.col_types:
+        for n in range(n_labels):
+            
+            is_uninformative = True
+            
+            label_dict[letters[n]] = []
+            
+            for counter , column in enumerate(self.col_types):
+                
+                if  counter >= self.nr_uninformative_columns:
+                    is_uninformative = False
+                
                 if column == 'binom':
-                    col_mean = random.random()
+                    if is_uninformative:
+                        col_mean = 0.5
+                    else:
+                        col_mean = random.random()
+                        
                 if column == 'norm':
-                    col_mean = (self.preset_mean + 
+                    if is_uninformative:
+                        col_mean = 0.5
+                    else:
+                        col_mean = (self.preset_mean + 
                                 (random.randint(0,self.preset_spread) - (self.preset_spread / 2)  ) )
                 if column == 'categorical':
                 # most common label
-                    col_mean = random.choice(label_list)
+                    if is_uninformative:
+                        col_mean = label_list[2]
+                    else:
+                        col_mean = random.choice(label_list)
                 if column == 'chisquare':
-                    col_mean = random.randint(0,self.preset_spread)
+                    if is_uninformative:
+                        col_mean = 5
+                    else:
+                        col_mean = random.randint(0,self.preset_spread)
 
                 label_dict[letters[n]].append(col_mean)
     
